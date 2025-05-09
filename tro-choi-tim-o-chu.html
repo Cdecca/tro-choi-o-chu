@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trò Chơi Ô Chữ Bí Mật</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            border: 2px solid #333;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .cell.revealed {
+            background-color: #4caf50;
+            color: white;
+        }
+        .cell:hover {
+            background-color: #ddd;
+        }
+        #game-screen {
+            display: none;
+            text-align: center;
+        }
+        #word-display {
+            font-size: 48px;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        #hidden-word {
+            font-size: 48px;
+            color: transparent;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        #hidden-word.revealed {
+            color: #333;
+            text-shadow: none;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #reset-btn {
+            background-color: #dc3545;
+        }
+        #reset-btn:hover {
+            background-color: #b02a37;
+        }
+    </style>
+</head>
+<body>
+    <div id="home-screen">
+        <h1>Trò Chơi Ô Chữ Bí Mật</h1>
+        <button id="reset-btn">Đặt Lại Trò Chơi</button>
+        <div class="grid" id="word-grid"></div>
+    </div>
+    <div id="game-screen">
+        <h2>Ô Chữ Bí Mật</h2>
+        <div id="word-display">?</div>
+        <button id="back-btn">Quay Lại</button>
+    </div>
+
+    <script>
+        const words = [
+            "A", "B", "C", "´", "`", "BA", "BÀ", "BÁ", "CA", "CÀ", "CÁ", "Á"
+        ];
+        let revealedWords = Array(12).fill(false);
+        let currentWordIndex = -1;
+
+        // Load revealed state from localStorage if available
+        const savedState = localStorage.getItem('revealedWords');
+        if (savedState) {
+            revealedWords = JSON.parse(savedState);
+        }
+
+        const wordGrid = document.getElementById('word-grid');
+        const gameScreen = document.getElementById('game-screen');
+        const homeScreen = document.getElementById('home-screen');
+        const wordDisplay = document.getElementById('word-display');
+        const backBtn = document.getElementById('back-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // Create grid cells
+        function createGrid() {
+            wordGrid.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                if (revealedWords[i]) {
+                    cell.classList.add('revealed');
+                    cell.textContent = words[i];
+                } else {
+                    cell.textContent = i + 1; // Display number instead of '?'
+                }
+                cell.addEventListener('click', () => goToWordPage(i));
+                wordGrid.appendChild(cell);
+            }
+        }
+
+        // Go to word page
+        function goToWordPage(index) {
+            currentWordIndex = index;
+            homeScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            wordDisplay.textContent = '?';
+            wordDisplay.classList.add('hidden-word');
+            wordDisplay.classList.remove('revealed');
+        }
+
+        // Reveal word on click
+        wordDisplay.addEventListener('click', () => {
+            if (!wordDisplay.classList.contains('revealed')) {
+                wordDisplay.textContent = words[currentWordIndex];
+                wordDisplay.classList.add('revealed');
+                wordDisplay.classList.remove('hidden-word');
+            }
+        });
+
+        // Back to home and reveal word
+        backBtn.addEventListener('click', () => {
+            if (wordDisplay.classList.contains('revealed')) {
+                revealedWords[currentWordIndex] = true;
+                localStorage.setItem('revealedWords', JSON.stringify(revealedWords));
+            }
+            gameScreen.style.display = 'none';
+            homeScreen.style.display = 'block';
+            createGrid();
+        });
+
+        // Reset game
+        resetBtn.addEventListener('click', () => {
+            revealedWords = Array(12).fill(false);
+            localStorage.setItem('revealedWords', JSON.stringify(revealedWords));
+            createGrid();
+        });
+
+        // Initialize grid
+        createGrid();
+    </script>
+</body>
+</html>
