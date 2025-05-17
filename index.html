@@ -1,175 +1,180 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trò Chơi Ô Chữ Bí Mật</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 20px;
-        }
-        h1 {
-            color: #333;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(4, 100px);
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .cell {
-            width: 100px;
-            height: 100px;
-            background-color: #ccc;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            cursor: pointer;
-            border: 2px solid #333;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        .cell.revealed {
-            background-color: #4caf50;
-            color: white;
-        }
-        .cell:hover {
-            background-color: #ddd;
-        }
-        #game-screen {
-            display: none;
-            text-align: center;
-        }
-        #word-display {
-            font-size: 48px;
-            margin: 20px 0;
-            cursor: pointer;
-        }
-        #hidden-word {
-            font-size: 48px;
-            color: transparent;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
-        #hidden-word.revealed {
-            color: #333;
-            text-shadow: none;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            margin: 10px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #reset-btn {
-            background-color: #dc3545;
-        }
-        #reset-btn:hover {
-            background-color: #b02a37;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Trò Chơi Học Chữ Cái Tiếng Việt</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
 </head>
 <body>
-    <div id="home-screen">
-        <h1>Trò Chơi Ô Chữ Bí Mật</h1>
-        <button id="reset-btn">Đặt Lại Trò Chơi</button>
-        <div class="grid" id="word-grid"></div>
-    </div>
-    <div id="game-screen">
-        <h2>Ô Chữ Bí Mật</h2>
-        <div id="word-display">?</div>
-        <button id="back-btn">Quay Lại</button>
-    </div>
+<script>
+let score = 0;
+let targetLetter = '';
+let letters = [];
+let bullet = null;
+let particles = [];
+let gameWon = false;
+const vietnameseAlphabet = [
+  'a', 'ă', 'â', 'b', 'c', 'd', 'đ', 'e', 'ê', 'g', 'h', 'i', 
+  'k', 'l', 'm', 'n', 'o', 'ô', 'ơ', 'p', 'q', 'r', 's', 't', 
+  'u', 'ư', 'v', 'x', 'y'
+];
+const gunLetters = ['o', 'ô', 'ơ', 'd', 'đ'];
 
-    <script>
-        const words = [
-            "A", "B", "C", "´", "`", "BA", "BÀ", "BÁ", "CA", "CÀ", "CÁ", "Á"
-        ];
-        let revealedWords = Array(12).fill(false);
-        let currentWordIndex = -1;
+function setup() {
+  createCanvas(800, 600);
+  targetLetter = random(gunLetters);
+  for (let i = 0; i < 17; i++) {
+    spawnLetter();
+  }
+}
 
-        // Load revealed state from localStorage if available
-        const savedState = localStorage.getItem('revealedWords');
-        if (savedState) {
-            revealedWords = JSON.parse(savedState);
+function draw() {
+  background(220);
+  
+  if (gameWon) {
+    textSize(48);
+    textAlign(CENTER);
+    fill(0, 128, 0);
+    text('Chiến thắng!', width / 2, height / 2);
+    return;
+  }
+  
+  drawGun();
+  
+  textSize(24);
+  textAlign(LEFT);
+  text('Điểm: ' + score, 10, 30);
+  
+  if (bullet) {
+    stroke(255, 0, 0);
+    strokeWeight(3);
+    line(width / 2, height - 50, bullet.x, bullet.y);
+    noStroke();
+    bullet.time--;
+    if (bullet.time <= 0) {
+      bullet = null;
+    }
+  }
+  
+  for (let i = letters.length - 1; i >= 0; i--) {
+    letters[i].update();
+    letters[i].show();
+    if (letters[i].y > height) {
+      letters.splice(i, 1);
+      spawnLetter();
+    }
+  }
+  
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].update();
+    particles[i].show();
+    if (particles[i].life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawGun() {
+  fill(100, 100, 100);
+  rect(width / 2 - 60, height - 60, 120, 40, 10);
+  fill(0);
+  rect(width / 2 - 10, height - 80, 20, 30);
+  fill(0, 128, 0);
+  rect(width / 2 - 40, height - 60, 30, 20, 5);
+  textSize(32);
+  fill(255);
+  textAlign(CENTER);
+  text(targetLetter, width / 2, height - 30);
+}
+
+function mousePressed() {
+  if (gameWon) return;
+  
+  bullet = { x: mouseX, y: mouseY, time: 10 };
+  
+  for (let i = letters.length - 1; i >= 0; i--) {
+    if (letters[i].isClicked(mouseX, mouseY)) {
+      if (letters[i].letter === targetLetter) {
+        if (score < 10) score += 1;
+        if (score >= 10) {
+          gameWon = true;
         }
-
-        const wordGrid = document.getElementById('word-grid');
-        const gameScreen = document.getElementById('game-screen');
-        const homeScreen = document.getElementById('home-screen');
-        const wordDisplay = document.getElementById('word-display');
-        const backBtn = document.getElementById('back-btn');
-        const resetBtn = document.getElementById('reset-btn');
-
-        // Create grid cells
-        function createGrid() {
-            wordGrid.innerHTML = '';
-            for (let i = 0; i < 12; i++) {
-                const cell = document.createElement('div');
-                cell.classList.add('cell');
-                if (revealedWords[i]) {
-                    cell.classList.add('revealed');
-                    cell.textContent = words[i];
-                } else {
-                    cell.textContent = i + 1; // Display number instead of '?'
-                }
-                cell.addEventListener('click', () => goToWordPage(i));
-                wordGrid.appendChild(cell);
-            }
+        for (let j = 0; j < 10; j++) {
+          particles.push(new Particle(letters[i].x, letters[i].y));
         }
+        targetLetter = random(gunLetters);
+        letters.splice(i, 1);
+        spawnLetter();
+      } else {
+        score -= 1;
+        if (score < 0) score = 0;
+      }
+      break;
+    }
+  }
+}
 
-        // Go to word page
-        function goToWordPage(index) {
-            currentWordIndex = index;
-            homeScreen.style.display = 'none';
-            gameScreen.style.display = 'block';
-            wordDisplay.textContent = '?';
-            wordDisplay.classList.add('hidden-word');
-            wordDisplay.classList.remove('revealed');
-        }
+function spawnLetter() {
+  if (gameWon || letters.length >= 19) return;
+  let letter;
+  if (random() < 0.7) {
+    letter = random(gunLetters);
+  } else {
+    let otherLetters = vietnameseAlphabet.filter(l => !gunLetters.includes(l));
+    letter = random(otherLetters);
+  }
+  let x = random(50, width - 50);
+  letters.push(new Letter(letter, x, 0));
+}
 
-        // Reveal word on click
-        wordDisplay.addEventListener('click', () => {
-            if (!wordDisplay.classList.contains('revealed')) {
-                wordDisplay.textContent = words[currentWordIndex];
-                wordDisplay.classList.add('revealed');
-                wordDisplay.classList.remove('hidden-word');
-            }
-        });
+class Letter {
+  constructor(letter, x, y) {
+    this.letter = letter;
+    this.x = x;
+    this.y = y;
+    this.speed = random(0.5, 1);
+  }
+  
+  update() {
+    this.y += this.speed;
+  }
+  
+  show() {
+    fill(255, 0, 0);
+    ellipse(this.x, this.y, 40, 40);
+    fill(255);
+    textSize(24);
+    textAlign(CENTER);
+    text(this.letter, this.x, this.y + 8);
+  }
+  
+  isClicked(mx, my) {
+    let d = dist(mx, my, this.x, this.y);
+    return d < 20;
+  }
+}
 
-        // Back to home and reveal word
-        backBtn.addEventListener('click', () => {
-            if (wordDisplay.classList.contains('revealed')) {
-                revealedWords[currentWordIndex] = true;
-                localStorage.setItem('revealedWords', JSON.stringify(revealedWords));
-            }
-            gameScreen.style.display = 'none';
-            homeScreen.style.display = 'block';
-            createGrid();
-        });
-
-        // Reset game
-        resetBtn.addEventListener('click', () => {
-            revealedWords = Array(12).fill(false);
-            localStorage.setItem('revealedWords', JSON.stringify(revealedWords));
-            createGrid();
-        });
-
-        // Initialize grid
-        createGrid();
-    </script>
+class Particle {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.vx = random(-2, 2);
+    this.vy = random(-2, 2);
+    this.life = 20;
+  }
+  
+  update() {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.life--;
+  }
+  
+  show() {
+    fill(255, 0, 0);
+    noStroke();
+    ellipse(this.x, this.y, 5, 5);
+  }
+}
+</script>
 </body>
 </html>
